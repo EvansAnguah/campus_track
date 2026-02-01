@@ -35,6 +35,10 @@ try {
             handleCurrentUser();
             break;
 
+        case 'create-lecturer':
+            handleCreateLecturer();
+            break;
+
         default:
             sendError('Invalid action', 400);
     }
@@ -170,6 +174,41 @@ function handleCurrentUser() {
     }
 
     sendSuccess('User data retrieved', ['user' => $user]);
+}
+
+/**
+ * Create new lecturer account (admin function)
+ */
+function handleCreateLecturer() {
+    global $auth;
+
+    $data = json_decode(file_get_contents('php://input'), true);
+
+    $fullName = trim($data['fullName'] ?? '');
+    $email = trim($data['email'] ?? '');
+    $employeeId = trim($data['employeeId'] ?? '');
+    $department = trim($data['department'] ?? '');
+    $phone = trim($data['phone'] ?? '');
+    $password = $data['password'] ?? '';
+    $passwordConfirm = $data['passwordConfirm'] ?? '';
+
+    // Validate
+    if (!$fullName || !$email || !$employeeId || !$department || !$password || !$passwordConfirm) {
+        sendError('All fields are required');
+    }
+
+    if ($password !== $passwordConfirm) {
+        sendError('Passwords do not match');
+    }
+
+    // Create lecturer
+    $result = $auth->createLecturer($fullName, $email, $employeeId, $department, $phone, $password);
+    
+    if ($result['success']) {
+        sendSuccess($result['message']);
+    } else {
+        sendError($result['message']);
+    }
 }
 
 ?>

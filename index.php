@@ -20,6 +20,7 @@
                     <div class="nav-buttons">
                         <button class="btn btn-secondary" onclick="showLoginModal('student')">Student Login</button>
                         <button class="btn btn-primary" onclick="showLoginModal('lecturer')">Lecturer Login</button>
+                        <a href="create_lecturer.php" class="btn btn-secondary" style="text-decoration: none; padding: 10px 20px; display: inline-block;">Create Lecturer</a>
                     </div>
                 </div>
             </div>

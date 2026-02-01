@@ -108,7 +108,7 @@ function loginStudent() {
 
     apiCall('auth.php?action=login', data)
         .then(response => {
-            if (response.success) {
+            if (response && response.success) {
                 // Store session
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({
                     user: response.user,
@@ -119,11 +119,12 @@ function loginStudent() {
                 closeLoginModal();
                 redirectToDashboard();
             } else {
-                showAlert(response.message, 'error');
+                showAlert(response?.message || 'Login failed. Please try again.', 'error');
             }
         })
         .catch(error => {
-            showAlert('Login failed. Please try again.', 'error');
+            showAlert(error?.message || 'Login failed. Please try again.', 'error');
+            console.error('Login Error:', error);
         });
 }
 
@@ -144,7 +145,7 @@ function loginLecturer() {
 
     apiCall('auth.php?action=login', data)
         .then(response => {
-            if (response.success) {
+            if (response && response.success) {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({
                     user: response.user,
                     token: response.user.token
@@ -154,11 +155,12 @@ function loginLecturer() {
                 closeLoginModal();
                 redirectToDashboard();
             } else {
-                showAlert(response.message, 'error');
+                showAlert(response?.message || 'Login failed. Please try again.', 'error');
             }
         })
         .catch(error => {
-            showAlert('Login failed. Please try again.', 'error');
+            showAlert(error?.message || 'Login failed. Please try again.', 'error');
+            console.error('Login Error:', error);
         });
 }
 
@@ -217,15 +219,16 @@ function registerStudent() {
 
     apiCall('auth.php?action=register', data)
         .then(response => {
-            if (response.success) {
+            if (response && response.success) {
                 showAlert('Registration successful! Please login.', 'success');
                 setTimeout(() => showLoginModal('student'), 1500);
             } else {
-                showAlert(response.message, 'error');
+                showAlert(response?.message || 'Registration failed. Please try again.', 'error');
             }
         })
         .catch(error => {
-            showAlert('Registration failed. Please try again.', 'error');
+            showAlert(error?.message || 'Registration failed. Please try again.', 'error');
+            console.error('Registration Error:', error);
         });
 }
 
@@ -273,10 +276,16 @@ function apiCall(endpoint, data = {}) {
         body: JSON.stringify(data)
     })
     .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
+        return response.json().then(json => {
+            if (!response.ok) {
+                throw new Error(json.message || 'Network response was not ok');
+            }
+            return json;
+        });
+    })
+    .catch(error => {
+        console.error('API Error:', error);
+        throw error;
     });
 }
 

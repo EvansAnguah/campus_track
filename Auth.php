@@ -321,6 +321,87 @@ class Auth {
 
         return ['userType' => $userType, 'data' => $userData];
     }
+
+    /**
+     * Create new lecturer account
+     * 
+     * @param string $fullName
+     * @param string $email
+     * @param string $employeeId
+     * @param string $department
+     * @param string $phone
+     * @param string $password
+     * @return array
+     */
+    public function createLecturer($fullName, $email, $employeeId, $department, $phone, $password) {
+        // Validate inputs
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'Invalid email format'];
+        }
+
+        if (strlen($password) < 8) {
+            return ['success' => false, 'message' => 'Password must be at least 8 characters'];
+        }
+
+        if (strlen($fullName) < 2) {
+            return ['success' => false, 'message' => 'Full name must be at least 2 characters'];
+        }
+
+        if (empty($employeeId)) {
+            return ['success' => false, 'message' => 'Employee ID is required'];
+        }
+
+        // Check if email already exists
+        $stmt = $this->db->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        if ($stmt->get_result()->num_rows > 0) {
+            $stmt->close();
+            return ['success' => false, 'message' => 'Email already registered'];
+        }
+        $stmt->close();
+
+        // Check if employee ID already exists
+        $stmt = $this->db->prepare("SELECT id FROM lecturers WHERE employee_id = ?");
+        $stmt->bind_param('s', $employeeId);
+        $stmt->execute();
+        if ($stmt->get_result()->num_rows > 0) {
+            $stmt->close();
+            return ['success' => false, 'message' => 'Employee ID already exists'];
+        }
+        $stmt->close();
+
+        // Hash password
+        $passwordHash = hashPassword($password);
+
+        // Create user
+        $stmt = $this->db->prepare("INSERT INTO users (email, password_hash, user_type) VALUES (?, ?, ?)");
+        $userType = 'lecturer';
+        $stmt->bind_param('sss', $email, $passwordHash, $userType);
+        
+        if (!$stmt->execute()) {
+            $stmt->close();
+            return ['success' => false, 'message' => 'Failed to create user account'];
+        }
+        
+        $userId = $this->db->getConnection()->insert_id;
+        $stmt->close();
+
+        // Create lecturer profile
+        $stmt = $this->db->prepare("INSERT INTO lecturers (user_id, employee_id, department, phone) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param('isss', $userId, $employeeId, $department, $phone);
+        
+        if (!$stmt->execute()) {
+            // Rollback - delete user
+            $this->db->prepare("DELETE FROM users WHERE id = ?")->bind_param('i', $userId)->execute();
+            $stmt->close();
+            return ['success' => false, 'message' => 'Failed to create lecturer profile'];
+        }
+        
+        $stmt->close();
+
+        return ['success' => true, 'message' => 'Lecturer account created successfully'];
+    }
 }
 
 ?>
